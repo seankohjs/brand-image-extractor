@@ -3,11 +3,14 @@ import express from "express";
 import { createServer } from "http";
 import net from "net";
 import path from "path";
+import fs from "fs";
+import archiver from "archiver";
 import { createExpressMiddleware } from "@trpc/server/adapters/express";
 import { registerOAuthRoutes } from "./oauth";
 import { appRouter } from "../routers";
 import { createContext } from "./context";
 import { serveStatic, setupVite } from "./vite";
+import { getCrawlJob, getImagesByCrawlJob } from "../db";
 
 function isPortAvailable(port: number): Promise<boolean> {
   return new Promise(resolve => {
@@ -43,6 +46,77 @@ async function startServer() {
   
   // OAuth callback under /api/oauth/callback
   registerOAuthRoutes(app);
+
+  // ZIP download endpoint
+  app.get('/api/download/:jobId', async (req, res) => {
+    try {
+      const jobId = parseInt(req.params.jobId);
+      if (isNaN(jobId)) {
+        return res.status(400).json({ error: 'Invalid job ID' });
+      }
+
+      const job = await getCrawlJob(jobId);
+      if (!job) {
+        return res.status(404).json({ error: 'Job not found' });
+      }
+
+      const images = await getImagesByCrawlJob(jobId);
+      if (images.length === 0) {
+        return res.status(404).json({ error: 'No images found for this job' });
+      }
+
+      // Set response headers for ZIP download
+      const filename = `brand-images-${jobId}.zip`;
+      res.setHeader('Content-Type', 'application/zip');
+      res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+
+      // Create ZIP archive
+      const archive = archiver('zip', { zlib: { level: 5 } });
+      archive.pipe(res);
+
+      // Add each image to the archive
+      const uploadsDir = path.join(process.cwd(), 'uploads');
+      for (const img of images) {
+        if (img.s3Url) {
+          // Extract local path from URL (e.g., /uploads/crawl-1/img.png -> crawl-1/img.png)
+          const relativePath = img.s3Url.replace(/^\/uploads\//, '');
+          const filePath = path.join(uploadsDir, relativePath);
+
+          if (fs.existsSync(filePath)) {
+            const imgFilename = path.basename(filePath);
+            archive.file(filePath, { name: imgFilename });
+          }
+        }
+      }
+
+      // Add metadata JSON
+      const metadata = {
+        jobId,
+        url: job.targetUrl,
+        crawledAt: job.createdAt,
+        brandKit: {
+          colors: job.brandColors,
+          fonts: job.brandFonts,
+          cssColors: job.cssColors,
+        },
+        images: images.map(img => ({
+          filename: img.s3Url ? path.basename(img.s3Url) : null,
+          originalUrl: img.originalUrl,
+          altText: img.altText,
+          width: img.width,
+          height: img.height,
+          dominantColors: img.dominantColors,
+        })),
+      };
+      archive.append(JSON.stringify(metadata, null, 2), { name: 'metadata.json' });
+
+      await archive.finalize();
+    } catch (error) {
+      console.error('ZIP download error:', error);
+      res.status(500).json({ error: 'Failed to create ZIP' });
+    }
+  });
+
   // tRPC API
   app.use(
     "/api/trpc",
