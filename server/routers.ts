@@ -93,6 +93,8 @@ export const appRouter = router({
             // Apply filters
             if (input.filterBlurry && img.isBlurry) continue;
             if (input.filterNoDescription && !img.hasDescription) continue;
+            // Skip images with specific alt text patterns
+            if (img.altText?.toLowerCase().includes('gold-fan-blades')) continue;
 
             let storedUrl: string | null = null;
             let fileSize: number | null = null;
@@ -210,6 +212,8 @@ export const appRouter = router({
 
             const imagesToInsert = [];
             for (const img of result.images) {
+              // Skip images with specific alt text patterns
+              if (img.altText?.toLowerCase().includes('gold-fan-blades')) continue;
               const s3Result = await uploadImageToS3(img.originalUrl, jobId);
               imagesToInsert.push({
                 crawlJobId: jobId,
@@ -399,6 +403,8 @@ export const appRouter = router({
 
             const imagesToInsert = [];
             for (const img of result.images) {
+              // Skip images with specific alt text patterns
+              if (img.altText?.toLowerCase().includes('gold-fan-blades')) continue;
               const s3Result = await uploadImageToS3(img.originalUrl, jobId);
               imagesToInsert.push({
                 crawlJobId: jobId,
