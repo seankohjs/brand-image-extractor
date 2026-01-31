@@ -13,7 +13,7 @@ RUN npm install -g pnpm
 COPY package.json pnpm-lock.yaml ./
 
 # Install dependencies
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --no-frozen-lockfile
 
 # Copy source code
 COPY . .
@@ -52,7 +52,7 @@ RUN npm install -g pnpm && \
 COPY package.json pnpm-lock.yaml ./
 
 # Install production dependencies only
-RUN pnpm install --frozen-lockfile --prod
+RUN pnpm install --no-frozen-lockfile --prod
 
 # Install Playwright browsers
 RUN npx playwright install chromium
