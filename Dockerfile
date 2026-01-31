@@ -32,23 +32,17 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install pnpm
-RUN npm install -g pnpm
-
 # Copy package files
-COPY package.json pnpm-lock.yaml ./
+COPY package.json ./
 
-# Install dependencies
-RUN pnpm install --ignore-scripts
-
-# Rebuild native modules
-RUN pnpm rebuild
+# Install dependencies using npm (more reliable in Docker)
+RUN npm install --legacy-peer-deps
 
 # Copy source code
 COPY . .
 
 # Build the application
-RUN pnpm build
+RUN npm run build
 
 # Install Playwright browsers
 RUN npx playwright install chromium
@@ -60,8 +54,6 @@ RUN mkdir -p uploads && chmod 755 uploads
 ENV NODE_ENV=production
 ENV PORT=3000
 
-# Expose port
 EXPOSE 3000
 
-# Start the application
-CMD ["node", "dist/index.js"]
+CMD ["npm", "start"]
