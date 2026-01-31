@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: brand-image-extractor
+    runtime: node
+    buildCommand: pnpm install && npx playwright install chromium --with-deps && pnpm build
+    startCommand: pnpm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        sync: false  # Set manually in Render dashboard
+      - key: JWT_SECRET
+        generateValue: true
+      - key: STORAGE_MODE
+        value: local

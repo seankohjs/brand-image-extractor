@@ -1,0 +1,41 @@
+# Brand Image Extractor - Docker Compose
+# Use this for local development with Docker
+
+version: '3.8'
+
+services:
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=mysql://root:password@db:3306/brand_extractor
+      - STORAGE_MODE=local
+      - LOCAL_STORAGE_URL=http://localhost:3000/uploads
+      - JWT_SECRET=your-secret-key-change-this-in-production
+    volumes:
+      - ./uploads:/app/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=brand_extractor
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  mysql_data:

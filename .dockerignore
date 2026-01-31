@@ -1,0 +1,43 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Editor directories
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Test coverage
+coverage/
+
+# Uploads (will be mounted as volume)
+uploads/
+
+# Git
+.git/
+.gitignore
+
+# Documentation (not needed in container)
+*.md
+!README.md
+
+# Development files
+.manus-logs/
+screenshots/
